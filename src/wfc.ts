@@ -1,26 +1,33 @@
 import {tileRuleSolvers} from "./tile_rules.ts";
 import {pickRandomWeightedItem, tile_weight} from "./tile_weights.ts";
 import {Direction, TileType} from "./tile_types.ts";
+import {Color, tile_connections} from "./colors.ts";
 
 export class WfcGrid {
     width: number;
     height: number;
     // 2 spatial dimensions, third dimension represents all possible tile types for that location
     tiles: TileType[][][];
+    colors: Color[][];
 
     constructor(width: number, height: number) {
         this.width = width;
         this.height = height;
         this.tiles = new Array(width);
+        this.colors = new Array(width);
         for (let x = 0; x < width; x++) {
             this.tiles[x] = new Array(height);
+            this.colors[x] = new Array(height);
             for (let y = 0; y < height; y++) {
                 this.tiles[x][y] = [];
+                this.colors[x][y] = Color.random();
                 for (let tileType = 0; tileType < 6; tileType++) {
                     this.tiles[x][y].push(tileType);
                 }
             }
+
         }
+
     }
 
     /**
@@ -116,6 +123,7 @@ export class WfcGrid {
     // calculate the entropy of a specific coordinate, based on the weights in tile_weights.ts
     getEntropy(x: number, y: number) {
         let choices = this.tiles[x][y];
+        if (choices.length == 6) return 100;
         let weights = choices.map((t) => {
             return tile_weight.get(t)!;
         });
@@ -215,6 +223,43 @@ export class WfcGrid {
             valid.push(tileRuleSolvers.get(this.tiles[x][y][0])!(this.tiles[x][y + 1][0], Direction.BELOW));
         }
         return valid;
+    }
+
+    simulateColorStep(): boolean {
+        // spread out colors, battling across the tile connections
+        let didChange = false;
+        for (let x = 0; x < this.width; x++) {
+            for (let y = 0; y < this.height; y++) {
+                const tile = this.getTile(x, y);
+                if (tile.length != 1) continue;
+                const color = this.colors[x][y];
+                for (let offset of tile_connections[tile[0]]) {
+                    let nx = x + offset[0];
+                    let ny = y + offset[1];
+                    if (nx < 0 || nx >= this.width || ny < 0 || ny >= this.height) continue;
+                    const otherTile = this.getTile(nx, ny);
+                    if (otherTile.length != 1) continue;
+                    const otherColor = this.colors[nx][ny];
+                    if (otherColor.value == color.value) continue;
+
+
+                    didChange = true;
+                    if (color.tiles > 20 && color.value != "#333333") {
+                        color.weight = 100000;
+                        color.value = "#333333";
+                    }
+                    if (color.beats(otherColor)) {
+                        color.tiles++;
+                        this.colors[nx][ny] = color;
+
+                    } else {
+                        otherColor.tiles++;
+                        this.colors[x][y] = otherColor;
+                    }
+                }
+            }
+        }
+        return didChange;
     }
 }
 

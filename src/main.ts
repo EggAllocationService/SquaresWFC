@@ -1,6 +1,7 @@
 import {WfcGrid} from "./wfc.ts";
 import {drawValidOverlay, render} from "./renderer.ts";
 import {tile_weight} from "./tile_weights.ts";
+import {TileType} from "./tile_types.ts";
 
 const elementSize = 30;
 
@@ -11,14 +12,29 @@ let man = document.getElementById("main") as HTMLCanvasElement;
 let canvasContext = man.getContext("2d")!;
 
 // generation grid
-let grid = new WfcGrid(Math.ceil(man.width / elementSize), Math.ceil(man.height / elementSize)); // 30x30 features
-// @ts-ignore
-window.grid = grid;
+let grid: WfcGrid;
+
 let ixel = (document.getElementById("ix") as HTMLInputElement);
 let iyel = (document.getElementById("iy") as HTMLInputElement);
 
 var interval: number = -1;
+function resetGrid() {
 
+    grid = new WfcGrid(Math.ceil(man.width / elementSize), Math.ceil(man.height / elementSize));
+
+    if (!(document.getElementById("border")! as HTMLInputElement).checked) return;
+    for (let x = 1; x < grid.width - 1; x++) {
+        grid.deterministicCollapse(x, 0, TileType.HORIZ);
+        grid.deterministicCollapse(x, grid.height - 1, TileType.HORIZ);
+    }
+    for (let y = 1; y < grid.height - 1; y++) {
+        grid.deterministicCollapse(0, y, TileType.VERT);
+        grid.deterministicCollapse(grid.width - 1, y, TileType.VERT);
+    }
+
+}
+
+resetGrid();
 document.getElementById("sub")!.addEventListener("click", function() {
     if (interval == -1) {
         interval = setInterval(function() {
@@ -43,7 +59,7 @@ document.getElementById("sub")!.addEventListener("click", function() {
     }
 })
 
-const batch_size = 5; // 5x5 batches
+const batch_size = 11; // 5x5 batches
 let batches: number[][] = [];
 document.getElementById("full")!.addEventListener("click", async function () {
     let horiz_batch_count = Math.ceil(grid.width / batch_size);
@@ -54,7 +70,7 @@ document.getElementById("full")!.addEventListener("click", async function () {
             batches.push([bx, by]);
         }
     }
-    batchIterationSolve();
+
 })
 let curIters = 0;
 function batchIterationSolve() {
@@ -82,7 +98,6 @@ function batchIterationSolve() {
         curIters = 0;
         batches.shift();
     }
-    setTimeout(batchIterationSolve, 15);
 }
 
 let debugEl = document.getElementById("debug")! as HTMLSpanElement;
@@ -94,8 +109,23 @@ for (let i = 0; i < 6; i++) {
 }
 
 document.getElementById("reset")!.addEventListener("click",  function() {
-    grid = new WfcGrid(grid.width, grid.height);
+    resetGrid();
 })
+
+let colorInterval = -1;
+document.getElementById("color")!.addEventListener("click", function() {
+    if (colorInterval == -1) {
+        colorInterval = setInterval(function() {
+            if (!grid.simulateColorStep()) {
+                clearInterval(colorInterval);
+                colorInterval = -1;
+            }
+        }, 15);
+    } else {
+        clearInterval(colorInterval);
+        colorInterval = -1;
+    }
+});
 
 function setupWeightInput(el: HTMLInputElement, index: number) {
     el.value = tile_weight.get(index)?.toString() ?? "-1";
@@ -105,10 +135,13 @@ function setupWeightInput(el: HTMLInputElement, index: number) {
         tile_weight.set(index, val);
     })
 }
+
+const color_b = document.getElementById("color_b") as HTMLInputElement;
 function mainLoop() {
     canvasContext.fillStyle = "black"
     canvasContext.fillRect(0, 0, man.width, man.height);
-    render(canvasContext, grid, elementSize, 10);
+    batchIterationSolve();
+    render(canvasContext, grid, elementSize, 10, color_b.checked);
     requestAnimationFrame(mainLoop);
     let ix = parseInt(ixel.value);
     let iy = parseInt(iyel.value);

@@ -6,12 +6,15 @@
     <title>Vite + TS</title>
   </head>
   <body>
-    <canvas id="main" width="1280" height="720"></canvas>
+    <canvas id="main" width="1290" height="720"></canvas>
     <br />
     <label for="ix">X Coordinate: </label><input type="number" id="ix" value="0" />
     <label for="iy">Y Coordinate: </label><input type="number" id="iy" value="0" />
     <br />
-    <label for="valid">Enable validity overlay:</label><input type="checkbox" id="valid" />
+    <label for="valid">Enable validity overlay:</label><input type="checkbox" id="valid" /> <br />
+    <label for="border">Enable border generation:</label><input type="checkbox" id="border" /> <br />
+    <label for="color_b">Enable color rendering:</label><input type="checkbox" id="color_b" checked />
+    <br />
     <br />
     <label for="w1">Horizontal Weight:</label><input type="number" id="w1" />
     <label for="w2">Vertical Weight:</label><input type="number" id="w2" />
@@ -26,6 +29,9 @@
     <button id="reset">Reset</button><br /><br />
     <button id="full">Model synthesis solve (hangs for a bit)</button>
     <br />
+    <br />
+    <button id="color">Simulate color step</button>
+    <br /><br />
     <span id="debug"></span>
     <script type="module" src="src/main.ts"></script>
   </body>

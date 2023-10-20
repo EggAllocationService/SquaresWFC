@@ -2,12 +2,12 @@ import {Direction, TileType} from "./tile_types.ts";
 import {WfcGrid} from "./wfc.ts";
 
 
-export function render(ctx: CanvasRenderingContext2D, grid: WfcGrid, elementSize: number, lineWidth: number) {
+export function render(ctx: CanvasRenderingContext2D, grid: WfcGrid, elementSize: number, lineWidth: number, color: boolean = true) {
     ctx.fillStyle = "black";
 
     for (let x = 0; x < grid.width; x++) {
         for (let y = 0; y < grid.height; y++) {
-            render_tile(x, y, ctx, grid, elementSize, lineWidth);
+            render_tile(x, y, ctx, grid, elementSize, lineWidth, color);
         }
     }
 }
@@ -16,9 +16,6 @@ function draw_corner_tile(originX: number, originY: number, dir1: Direction, dir
     //let saved = ctx.fillStyle;
     let middleX = (originX + elementSize / 2) - (lineWidth/2);
     let middleY = (originY + elementSize / 2) - (lineWidth/2);
-    /*ctx.fillStyle = "lime";
-    ctx.fillRect(originX, originY, elementSize, elementSize);
-    ctx.fillStyle = saved;*/
     for (let dir of [dir1, dir2]) {
         // draw the single directional line from the edge of the tile to the center
 
@@ -42,7 +39,7 @@ function draw_corner_tile(originX: number, originY: number, dir1: Direction, dir
     }
 }
 
-function render_tile(x: number, y: number, ctx: CanvasRenderingContext2D, waveFunction: WfcGrid, elementSize: number, lineWidth: number) {
+function render_tile(x: number, y: number, ctx: CanvasRenderingContext2D, waveFunction: WfcGrid, elementSize: number, lineWidth: number, drawColor: boolean = true) {
     let possibilities = waveFunction.getTile(x, y);
     let originX = x * elementSize;
     let originY = y * elementSize;
@@ -56,7 +53,11 @@ function render_tile(x: number, y: number, ctx: CanvasRenderingContext2D, waveFu
     } else if (possibilities.length == 1) {
         // got collapsed
         let final = possibilities[0];
-        ctx.fillStyle = "white";
+        if (drawColor) {
+            ctx.fillStyle = waveFunction.colors[x][y].value;
+        } else {
+            ctx.fillStyle = "white";
+        }
         switch (final) {
             case TileType.HORIZ:
                 ctx.fillRect(originX, middleY, elementSize, lineWidth);
